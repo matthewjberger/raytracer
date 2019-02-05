@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::Write;
 
+mod vec3;
+
 fn main() {
     let filename = "output.ppm";
     let mut output = File::create(filename).unwrap();
