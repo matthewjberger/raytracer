@@ -9,14 +9,14 @@ fn main() {
 
     let width = 200;
     let height = 100;
-    write!(output, "P3\n{} {}\n255\n", width, height).unwrap();
+    writeln!(output, "P3\n{} {}\n255", width, height).unwrap();
 
     for y in (0..height).rev() {
         for x in 0..width {
-            let red = (x as f64 / width as f64) * 255.99;
-            let green = (y as f64 / height as f64) * 255.99;
+            let red = (f64::from(x) / f64::from(width)) * 255.99;
+            let green = (f64::from(y) / f64::from(height)) * 255.99;
             let blue = 0.2 * 255.99;
-            write!(output, "{} {} {}\n", red as i32, green as i32, blue as i32).unwrap();
+            writeln!(output, "{} {} {}", red as i32, green as i32, blue as i32).unwrap();
         }
     }
 }
