@@ -4,18 +4,26 @@ use std::io::Write;
 
 mod vec;
 
-fn hit_sphere(center: &Vec3, radius: f32, r: &Ray) -> bool {
+fn hit_sphere(center: &Vec3, radius: f32, r: &Ray) -> f32 {
     let oc = r.origin - *center;
     let a = r.direction.dot(r.direction);
     let b = 2.0 * oc.dot(r.direction);
     let c = oc.dot(oc) - radius.powi(2);
     let discriminant = b.powi(2) - 4.0 * a * c;
-    discriminant > 0.0
+
+    if discriminant < 0.0 {
+        -1.0
+    } else {
+        (-b - discriminant.sqrt()) / (2.0 * a)
+    }
 }
 
 fn color(r: Ray) -> Vec3 {
-    if hit_sphere(&Vec3(0.0, 0.0, -1.0), 0.5, &r) {
-        return Vec3(0.0, 1.0, 0.0);
+    let sphere_center = Vec3(0.0, 0.0, -1.0);
+    let t = hit_sphere(&sphere_center, 0.5, &r);
+    if t > 0.0 {
+        let normal = (r.point_at_parameter(t) - sphere_center).to_unit_vector();
+        return 0.5 * (normal + 1.0);
     };
     let unit_direction = r.direction.to_unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.0);

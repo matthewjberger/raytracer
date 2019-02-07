@@ -35,6 +35,14 @@ impl Add for Vec3 {
     }
 }
 
+impl Add<f32> for Vec3 {
+    type Output = Vec3;
+
+    fn add(self, scalar: f32) -> Vec3 {
+        Vec3(self.0 + scalar, self.1 + scalar, self.2 + scalar)
+    }
+}
+
 impl Neg for Vec3 {
     type Output = Vec3;
     fn neg(self) -> Vec3 {
