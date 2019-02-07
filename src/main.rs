@@ -1,8 +1,14 @@
-use crate::model::*;
-use crate::vec::*;
+extern crate rand;
+
+use rand::Rng;
 use std::fs::File;
 use std::io::Write;
 
+use crate::camera::*;
+use crate::model::*;
+use crate::vec::*;
+
+mod camera;
 mod model;
 mod vec;
 
@@ -19,36 +25,46 @@ fn color(r: Ray, world: &[Box<Model>]) -> Vec3 {
 }
 
 fn main() {
+    let mut rng = rand::thread_rng();
+
     let filename = "output.ppm";
     let mut output = File::create(filename).unwrap();
 
     let width = 200;
     let height = 100;
+    let samples_per_pixel = 100;
     writeln!(output, "P3\n{} {}\n255", width, height).unwrap();
-
-    let lower_left_corner = Vec3(-2.0, -1.0, -1.0);
-    let horizontal = Vec3(4.0, 0.0, 0.0);
-    let vertical = Vec3(0.0, 2.0, 0.0);
-    let origin = Vec3(0.0, 0.0, 0.0);
 
     let world: Vec<Box<Model>> = vec![
         Box::new(Sphere::new(Vec3(0.0, 0.0, -1.0), 0.5)),
         Box::new(Sphere::new(Vec3(0.0, -100.5, -1.0), 100.0)),
     ];
 
+    let camera = Camera {
+        lower_left_corner: Vec3(-2.0, -1.0, -1.0),
+        horizontal: Vec3(4.0, 0.0, 0.0),
+        vertical: Vec3(0.0, 2.0, 0.0),
+        origin: Vec3(0.0, 0.0, 0.0),
+    };
+
     for y in (0..height).rev() {
         for x in 0..width {
-            let u = x as f32 / width as f32;
-            let v = y as f32 / height as f32;
-            let r = Ray::new(origin, lower_left_corner + u * horizontal + v * vertical);
+            let mut blended_color = Vec3(0.0, 0.0, 0.0);
+            for _ in 0..samples_per_pixel {
+                let u = (x as f32 + rng.gen::<f32>()) / width as f32;
+                let v = (y as f32 + rng.gen::<f32>()) / height as f32;
+                let r = camera.get_ray(u, v);
+                blended_color = blended_color + color(r, &world);
+            }
+            blended_color = blended_color / (samples_per_pixel as f32);
+            let final_color = blended_color * 255.99;
 
-            let color = color(r, &world) * 255.99;
             writeln!(
                 output,
                 "{} {} {}",
-                color.x() as i32,
-                color.y() as i32,
-                color.z() as i32
+                final_color.x() as i32,
+                final_color.y() as i32,
+                final_color.z() as i32
             )
             .unwrap();
         }
