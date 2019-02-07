@@ -22,7 +22,7 @@ impl Vec3 {
               self.0 * other.1 - self.1 * other.0)
     }
 
-    pub fn to_unit_vector(&self) -> Vec3 {
+    pub fn as_unit_vector(&self) -> Vec3 {
         *self / self.length()
     }
 }
@@ -100,7 +100,7 @@ impl Ray {
         Ray { origin, direction }
     }
 
-    pub fn point_at_parameter(self, t: f32) -> Vec3 {
+    pub fn point_at_parameter(&self, t: f32) -> Vec3 {
         self.origin + self.direction * t
     }
 }
