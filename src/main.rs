@@ -25,8 +25,6 @@ fn color(r: Ray, world: &[Box<Model>]) -> Vec3 {
 }
 
 fn main() {
-    let mut rng = rand::thread_rng();
-
     let filename = "output.ppm";
     let mut output = File::create(filename).unwrap();
 
@@ -51,8 +49,8 @@ fn main() {
         for x in 0..width {
             let mut blended_color = Vec3(0.0, 0.0, 0.0);
             for _ in 0..samples_per_pixel {
-                let u = (x as f32 + rng.gen::<f32>()) / width as f32;
-                let v = (y as f32 + rng.gen::<f32>()) / height as f32;
+                let u = (x as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / width as f32;
+                let v = (y as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / height as f32;
                 let r = camera.get_ray(u, v);
                 blended_color = blended_color + color(r, &world);
             }
