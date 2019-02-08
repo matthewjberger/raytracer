@@ -30,7 +30,7 @@ fn color(r: Ray, world: &[Box<Model>]) -> Vec3 {
     const WHITE: Vec3 = Vec3(1.0, 1.0, 1.0);
     const SKY_BLUE: Vec3 = Vec3(0.5, 0.7, 1.0);
 
-    let interval = TimeInterval::new(0.0, i32::max_value() as f32);
+    let interval = TimeInterval::new(0.001, i32::max_value() as f32);
     if let Some(hit) = world.hit(&r, &interval) {
         let target = hit.p + hit.normal + random_in_unit_sphere();
         return 0.5 * color(Ray::new(hit.p, target - hit.p), &world);
