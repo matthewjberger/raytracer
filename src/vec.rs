@@ -25,6 +25,10 @@ impl Vec3 {
     pub fn as_unit_vector(&self) -> Vec3 {
         *self / self.length()
     }
+
+    pub fn reflect(&self, v: Vec3) -> Vec3 {
+        *self - (v * 2.0 * self.dot(v))
+    }
 }
 
 impl Add for Vec3 {

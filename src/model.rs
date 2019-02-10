@@ -1,10 +1,12 @@
+use crate::material::Material;
 use crate::vec::{Ray, Vec3};
 
 #[derive(Clone, Copy)]
-pub struct Hit {
+pub struct Hit<'a> {
     pub t: f32,
     pub p: Vec3,
     pub normal: Vec3,
+    pub material: &'a Material,
 }
 
 pub struct TimeInterval {
@@ -25,11 +27,16 @@ pub trait Model {
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
+    pub material: Box<Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32) -> Sphere {
-        Sphere { center, radius }
+    pub fn new(center: Vec3, radius: f32, material: Box<Material>) -> Sphere {
+        Sphere {
+            center,
+            radius,
+            material,
+        }
     }
 }
 
@@ -49,6 +56,7 @@ impl Model for Sphere {
                     t: temp,
                     p: point,
                     normal,
+                    material: &*self.material,
                 });
             }
             temp = (-b + discriminant.sqrt()) / a;
@@ -59,6 +67,7 @@ impl Model for Sphere {
                     t: temp,
                     p: point,
                     normal,
+                    material: &*self.material,
                 });
             }
         }
