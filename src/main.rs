@@ -14,6 +14,77 @@ mod material;
 mod model;
 mod vec;
 
+fn drand48() -> f32 {
+    rand::thread_rng().gen_range(0.0, 1.0)
+}
+
+fn random_scene() -> std::vec::Vec<std::boxed::Box<model::Model>> {
+    let mut models = Vec::new();
+
+    models.push(Box::new(Sphere::new(
+        Vec3(0.0, -1000.0, 0.0),
+        1000.0,
+        Box::new(Lambertian::new(Vec3(0.5, 0.5, 0.5))),
+    )));
+
+    for x in -11..11 {
+        for y in -11..11 {
+            let choose_mat = drand48();
+            let center = Vec3(x as f32 + 0.9 * drand48(), 0.2, y as f32 + 0.9 * drand48());
+            if (center - Vec3(4.0, 0.2, 0.0)).length() > 0.9 {
+                if choose_mat < 0.8 {
+                    // diffuse
+                    models.push(Box::new(Sphere::new(
+                        center,
+                        0.2,
+                        Box::new(Lambertian::new(Vec3(
+                            drand48() * drand48(),
+                            drand48() * drand48(),
+                            drand48() * drand48(),
+                        ))),
+                    )));
+                } else if choose_mat < 0.95 {
+                    // metal
+                    models.push(Box::new(Sphere::new(
+                        center,
+                        0.2,
+                        Box::new(Metal::new(
+                            0.5 * Vec3(1.0 + drand48(), 1.0 + drand48(), 1.0 + drand48()),
+                            0.5 * drand48(),
+                        )),
+                    )));
+                } else {
+                    // glass
+                    models.push(Box::new(Sphere::new(
+                        center,
+                        0.2,
+                        Box::new(Dielectric::new(1.5)),
+                    )));
+                }
+            }
+        }
+    }
+    models.push(Box::new(Sphere::new(
+        Vec3(0.0, 1.0, 0.0),
+        1.0,
+        Box::new(Dielectric::new(1.5)),
+    )));
+
+    models.push(Box::new(Sphere::new(
+        Vec3(-4.0, 1.0, 0.0),
+        1.0,
+        Box::new(Lambertian::new(Vec3(0.4, 0.2, 0.1))),
+    )));
+
+    models.push(Box::new(Sphere::new(
+        Vec3(4.0, 1.0, 0.0),
+        1.0,
+        Box::new(Metal::new(Vec3(0.7, 0.6, 0.5), 0.0)),
+    )));
+
+    models.into_iter().map(|s| s as Box<Model>).collect()
+}
+
 fn color(r: Ray, world: &[Box<Model>], depth: i32) -> Vec3 {
     const WHITE: Vec3 = Vec3(1.0, 1.0, 1.0);
     const SKY_BLUE: Vec3 = Vec3(0.5, 0.7, 1.0);
@@ -37,48 +108,50 @@ fn main() {
     let filename = "output.ppm";
     let mut output = File::create(filename).unwrap();
 
-    let width = 200;
-    let height = 100;
+    let width = 800;
+    let height = 400;
     let samples_per_pixel = 100;
     writeln!(output, "P3\n{} {}\n255", width, height).unwrap();
 
-    let world: Vec<Box<Model>> = vec![
-        Box::new(Sphere::new(
-            Vec3(0.0, 0.0, -1.0),
-            0.5,
-            Box::new(Lambertian::new(Vec3(0.1, 0.2, 0.5))),
-        )),
-        Box::new(Sphere::new(
-            Vec3(0.0, -100.5, -1.0),
-            100.0,
-            Box::new(Lambertian::new(Vec3(0.8, 0.8, 0.0))),
-        )),
-        Box::new(Sphere::new(
-            Vec3(1.0, 0.0, -1.0),
-            0.5,
-            Box::new(Metal::new(Vec3(0.8, 0.6, 0.2), 0.3)),
-        )),
-        Box::new(Sphere::new(
-            Vec3(-1.0, 0.0, -1.0),
-            0.5,
-            Box::new(Dielectric::new(1.5)),
-        )),
-        Box::new(Sphere::new(
-            Vec3(-1.0, 0.0, -1.0),
-            -0.45,
-            Box::new(Dielectric::new(1.5)),
-        )),
-    ];
+    // let world: Vec<Box<Model>> = vec![
+    //     Box::new(Sphere::new(
+    //         Vec3(0.0, 0.0, -1.0),
+    //         0.5,
+    //         Box::new(Lambertian::new(Vec3(0.1, 0.2, 0.5))),
+    //     )),
+    //     Box::new(Sphere::new(
+    //         Vec3(0.0, -100.5, -1.0),
+    //         100.0,
+    //         Box::new(Lambertian::new(Vec3(0.8, 0.8, 0.0))),
+    //     )),
+    //     Box::new(Sphere::new(
+    //         Vec3(1.0, 0.0, -1.0),
+    //         0.5,
+    //         Box::new(Metal::new(Vec3(0.8, 0.6, 0.2), 0.3)),
+    //     )),
+    //     Box::new(Sphere::new(
+    //         Vec3(-1.0, 0.0, -1.0),
+    //         0.5,
+    //         Box::new(Dielectric::new(1.5)),
+    //     )),
+    //     Box::new(Sphere::new(
+    //         Vec3(-1.0, 0.0, -1.0),
+    //         -0.45,
+    //         Box::new(Dielectric::new(1.5)),
+    //     )),
+    // ];
 
-    let look_from = Vec3(3.0, 3.0, 2.0);
-    let look_at = Vec3(0.0, 0.0, -1.0);
-    let focus_dist = (look_from - look_at).length();
-    let aperture = 2.0;
+    let world = random_scene();
+
+    let look_from = Vec3(13.0, 2.0, 3.0);
+    let look_at = Vec3(0.0, 0.0, 0.0);
+    let focus_dist = 10.0;
+    let aperture = 0.1;
     let camera = Camera::new(
         look_from,
         look_at,
         Vec3(0.0, 1.0, 0.0),
-        45.0,
+        20.0,
         width as f32 / height as f32,
         aperture,
         focus_dist,
