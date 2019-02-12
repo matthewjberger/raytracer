@@ -2,7 +2,7 @@ use crate::model::Hit;
 use crate::vec::{Ray, Vec3};
 use rand::Rng;
 
-fn random_in_unit_sphere() -> Vec3 {
+pub fn random_in_unit_sphere() -> Vec3 {
     loop {
         let p =
             2.0 * Vec3(
@@ -14,6 +14,11 @@ fn random_in_unit_sphere() -> Vec3 {
             return p;
         };
     }
+}
+
+pub fn schlick(cosine: f32, ref_idx: f32) -> f32 {
+    let r0 = ((1.0 - ref_idx) / (1.0 + ref_idx)).powi(2);
+    r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
 }
 
 pub struct Scatter {
@@ -70,6 +75,56 @@ impl Material for Metal {
             } else {
                 None
             },
+        }
+    }
+}
+
+pub struct Dielectric {
+    pub ref_idx: f32,
+}
+
+impl Dielectric {
+    pub fn new(ref_idx: f32) -> Dielectric {
+        Dielectric { ref_idx }
+    }
+}
+
+impl Material for Dielectric {
+    fn scatter(&self, r_in: &Ray, hit: &Hit) -> Scatter {
+        let reflected = r_in.direction.reflect(hit.normal);
+
+        let outward_normal: Vec3;
+        let ni_over_nt: f32;
+        let cosine: f32;
+        let reflect_prob: f32;
+
+        if r_in.direction.dot(hit.normal) > 0.0 {
+            outward_normal = -hit.normal;
+            ni_over_nt = self.ref_idx;
+            cosine = self.ref_idx * r_in.direction.dot(hit.normal) / r_in.direction.length();
+        } else {
+            outward_normal = hit.normal;
+            ni_over_nt = 1.0 / self.ref_idx;
+            cosine = -r_in.direction.dot(hit.normal) / r_in.direction.length();
+        }
+
+        let refracted = r_in.direction.refract(outward_normal, ni_over_nt);
+
+        reflect_prob = if refracted.is_some() {
+            schlick(cosine, self.ref_idx)
+        } else {
+            1.0
+        };
+
+        let ray = if rand::thread_rng().gen_range(0.0, 1.0) < reflect_prob {
+            Ray::new(hit.p, reflected)
+        } else {
+            Ray::new(hit.p, refracted.unwrap())
+        };
+
+        Scatter {
+            color: Vec3(1.0, 1.0, 1.0),
+            ray: Some(ray),
         }
     }
 }

@@ -46,12 +46,12 @@ fn main() {
         Box::new(Sphere::new(
             Vec3(0.0, 0.0, -1.0),
             0.5,
-            Box::new(Lambertian::new(Vec3(0.8, 0.3, 0.3))),
+            Box::new(Lambertian::new(Vec3(0.1, 0.2, 0.5))),
         )),
         Box::new(Sphere::new(
             Vec3(0.0, -100.5, -1.0),
             100.0,
-            Box::new(Lambertian::new(Vec3(0.8, 0.8, 0.3))),
+            Box::new(Lambertian::new(Vec3(0.8, 0.8, 0.0))),
         )),
         Box::new(Sphere::new(
             Vec3(1.0, 0.0, -1.0),
@@ -61,7 +61,12 @@ fn main() {
         Box::new(Sphere::new(
             Vec3(-1.0, 0.0, -1.0),
             0.5,
-            Box::new(Metal::new(Vec3(0.8, 0.8, 0.8), 1.0)),
+            Box::new(Dielectric::new(1.5)),
+        )),
+        Box::new(Sphere::new(
+            Vec3(-1.0, 0.0, -1.0),
+            -0.45,
+            Box::new(Dielectric::new(1.5)),
         )),
     ];
 

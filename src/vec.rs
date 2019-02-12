@@ -29,6 +29,14 @@ impl Vec3 {
     pub fn reflect(&self, v: Vec3) -> Vec3 {
         *self - (v * 2.0 * self.dot(v))
     }
+
+    pub fn refract(&self, n: Vec3, ni_over_nt: f32) -> Option<Vec3> {
+        let uv = self.as_unit_vector();
+        let dt = uv.dot(n);
+        let discriminant = 1.0 - ni_over_nt.powi(2)*(1.0-dt.powi(2));
+        if discriminant < 0.0 { return None; }
+        Some(ni_over_nt*(uv - n*dt) - n*discriminant.sqrt())
+    }
 }
 
 impl Add for Vec3 {
