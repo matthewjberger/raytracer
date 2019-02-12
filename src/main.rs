@@ -70,12 +70,18 @@ fn main() {
         )),
     ];
 
+    let look_from = Vec3(3.0, 3.0, 2.0);
+    let look_at = Vec3(0.0, 0.0, -1.0);
+    let focus_dist = (look_from - look_at).length();
+    let aperture = 2.0;
     let camera = Camera::new(
-        Vec3(-2.0, 2.0, 1.0),
-        Vec3(0.0, 0.0, -1.0),
+        look_from,
+        look_at,
         Vec3(0.0, 1.0, 0.0),
         45.0,
         width as f32 / height as f32,
+        aperture,
+        focus_dist,
     );
 
     for y in (0..height).rev() {

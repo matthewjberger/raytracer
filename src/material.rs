@@ -2,6 +2,20 @@ use crate::model::Hit;
 use crate::vec::{Ray, Vec3};
 use rand::Rng;
 
+pub fn random_in_unit_disk() -> Vec3 {
+    loop {
+        let p =
+            2.0 * Vec3(
+                rand::thread_rng().gen_range(0.0, 1.0),
+                rand::thread_rng().gen_range(0.0, 1.0),
+                0.0,
+            ) - Vec3(1.0, 1.0, 0.0);
+        if p.squared_length() >= 1.0 {
+            return p;
+        };
+    }
+}
+
 pub fn random_in_unit_sphere() -> Vec3 {
     loop {
         let p =
