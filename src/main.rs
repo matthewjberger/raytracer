@@ -1,17 +1,13 @@
 extern crate image;
-extern crate num;
 extern crate num_cpus;
 extern crate rand;
 extern crate threadpool;
 
 use image::{ImageBuffer, Pixel, Rgb};
-use num::complex::Complex;
-use std::sync::mpsc::{channel, RecvError};
+use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
 use rand::Rng;
-use std::fs::File;
-use std::io::Write;
 use std::vec::Vec;
 
 use crate::camera::*;
@@ -28,7 +24,7 @@ fn drand48() -> f32 {
     rand::thread_rng().gen_range(0.0, 1.0)
 }
 
-fn sphere_scene() -> Vec<Box<Model>> {
+fn sphere_scene() -> Vec<Box<Model + Send>> {
     vec![
         Box::new(Sphere::new(
             Vec3(0.0, 0.0, -1.0),
@@ -57,11 +53,11 @@ fn sphere_scene() -> Vec<Box<Model>> {
         )),
     ]
     .into_iter()
-    .map(|s| s as Box<Model>)
+    .map(|s| s as Box<Model + Send>)
     .collect()
 }
 
-fn random_scene() -> std::vec::Vec<std::boxed::Box<model::Model>> {
+fn random_scene() -> Vec<Box<Model + Send>> {
     let mut models = Vec::new();
 
     models.push(Box::new(Sphere::new(
@@ -125,10 +121,10 @@ fn random_scene() -> std::vec::Vec<std::boxed::Box<model::Model>> {
         Box::new(Metal::new(Vec3(0.7, 0.6, 0.5), 0.0)),
     )));
 
-    models.into_iter().map(|s| s as Box<Model>).collect()
+    models.into_iter().map(|s| s as Box<Model + Send>).collect()
 }
 
-fn color(r: Ray, world: &[Box<Model>], depth: i32) -> Vec3 {
+fn color(r: Ray, world: &[Box<Model + Send>], depth: i32) -> Vec3 {
     const WHITE: Vec3 = Vec3(1.0, 1.0, 1.0);
     const SKY_BLUE: Vec3 = Vec3(0.5, 0.7, 1.0);
 
@@ -148,15 +144,10 @@ fn color(r: Ray, world: &[Box<Model>], depth: i32) -> Vec3 {
 }
 
 fn main() {
-    let filename = "output.ppm";
-    let mut output = File::create(filename).unwrap();
-
-    let width = 200;
-    let height = 100;
+    let (width, height) = (800, 400);
     let samples_per_pixel = 100;
-    writeln!(output, "P3\n{} {}\n255", width, height).unwrap();
 
-    let world = sphere_scene();
+    // let world = sphere_scene();
 
     let look_from = Vec3(13.0, 2.0, 3.0);
     let look_at = Vec3(0.0, 0.0, 0.0);
@@ -172,30 +163,43 @@ fn main() {
         focus_dist,
     );
 
-    for y in (0..height).rev() {
-        for x in 0..width {
-            let mut blended_color = Vec3(0.0, 0.0, 0.0);
-            for _ in 0..samples_per_pixel {
-                let u = (x as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / width as f32;
-                let v = (y as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / height as f32;
-                let r = camera.get_ray(u, v);
-                blended_color = blended_color + color(r, &world, 0);
-            }
-            blended_color = blended_color / (samples_per_pixel as f32);
-            let final_color = Vec3(
-                blended_color.x().sqrt(),
-                blended_color.y().sqrt(),
-                blended_color.z().sqrt(),
-            ) * 255.99;
+    let mut img = ImageBuffer::new(width, height);
+    let pool = ThreadPool::new(num_cpus::get());
+    let (tx, rx) = channel();
 
-            writeln!(
-                output,
-                "{} {} {}",
-                final_color.x() as i32,
-                final_color.y() as i32,
-                final_color.z() as i32
-            )
-            .unwrap();
-        }
+    for y in (0..height).rev() {
+        let tx = tx.clone();
+        pool.execute(move || {
+            for x in 0..width {
+                let mut blended_color = Vec3(0.0, 0.0, 0.0);
+                for _ in 0..samples_per_pixel {
+                    let u = (x as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / width as f32;
+                    let v = (y as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / height as f32;
+                    let r = camera.get_ray(u, v);
+                    let world = sphere_scene();
+                    blended_color = blended_color + color(r, &world, 0);
+                }
+                blended_color = blended_color / (samples_per_pixel as f32);
+                let final_color = Vec3(
+                    blended_color.x().sqrt(),
+                    blended_color.y().sqrt(),
+                    blended_color.z().sqrt(),
+                ) * 255.99;
+                let pixel = Rgb::from_channels(
+                    final_color.x() as u8,
+                    final_color.y() as u8,
+                    final_color.z() as u8,
+                    0,
+                );
+                tx.send((x, y, pixel)).expect("Could not send data!");
+            }
+        });
     }
+
+    for _ in 0..(width * height) {
+        let (x, y, pixel) = rx.recv().unwrap();
+        img.put_pixel(x, y, pixel)
+    }
+
+    let _ = img.save("output.png");
 }
