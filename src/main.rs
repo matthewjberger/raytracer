@@ -4,7 +4,7 @@ extern crate rand;
 extern crate threadpool;
 
 use image::{ImageBuffer, Pixel, Rgb};
-use std::sync::mpsc::channel;
+use std::sync::{mpsc::channel, Arc, Mutex};
 use threadpool::ThreadPool;
 
 use rand::Rng;
@@ -124,7 +124,7 @@ fn random_scene() -> Vec<Box<Model + Send>> {
     models.into_iter().map(|s| s as Box<Model + Send>).collect()
 }
 
-fn color(r: Ray, world: &[Box<Model + Send>], depth: i32) -> Vec3 {
+fn color(r: Ray, world: &Vec<Box<Model + Send>>, depth: i32) -> Vec3 {
     const WHITE: Vec3 = Vec3(1.0, 1.0, 1.0);
     const SKY_BLUE: Vec3 = Vec3(0.5, 0.7, 1.0);
 
@@ -144,10 +144,10 @@ fn color(r: Ray, world: &[Box<Model + Send>], depth: i32) -> Vec3 {
 }
 
 fn main() {
-    let (width, height) = (800, 400);
+    let (width, height) = (200, 100);
     let samples_per_pixel = 100;
 
-    // let world = sphere_scene();
+    let world = Arc::new(Mutex::new(random_scene()));
 
     let look_from = Vec3(13.0, 2.0, 3.0);
     let look_at = Vec3(0.0, 0.0, 0.0);
@@ -168,7 +168,7 @@ fn main() {
     let (tx, rx) = channel();
 
     for y in (0..height).rev() {
-        let tx = tx.clone();
+        let (world, tx) = (Arc::clone(&world), tx.clone());
         pool.execute(move || {
             for x in 0..width {
                 let mut blended_color = Vec3(0.0, 0.0, 0.0);
@@ -176,8 +176,8 @@ fn main() {
                     let u = (x as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / width as f32;
                     let v = (y as f32 + rand::thread_rng().gen_range(0.0, 1.0)) / height as f32;
                     let r = camera.get_ray(u, v);
-                    let world = sphere_scene();
-                    blended_color = blended_color + color(r, &world, 0);
+                    let world = world.lock().unwrap();
+                    blended_color = blended_color + color(r, &*world, 0);
                 }
                 blended_color = blended_color / (samples_per_pixel as f32);
                 let final_color = Vec3(

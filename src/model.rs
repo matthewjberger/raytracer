@@ -75,7 +75,7 @@ impl Model for Sphere {
     }
 }
 
-impl Model for [Box<Model + Send>] {
+impl Model for Vec<Box<Model + Send>> {
     fn hit(&self, r: &Ray, interval: &TimeInterval) -> Option<Hit> {
         let mut closest = None;
         for child in self {
