@@ -1,5 +1,6 @@
 use crate::vec::*;
 
+#[derive(Clone, Copy, Debug)]
 pub struct Camera {
     pub origin: Vec3,
     pub lower_left_corner: Vec3,

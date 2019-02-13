@@ -27,11 +27,11 @@ pub trait Model {
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
-    pub material: Box<Material>,
+    pub material: Box<Material + Send>,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32, material: Box<Material>) -> Sphere {
+    pub fn new(center: Vec3, radius: f32, material: Box<Material + Send>) -> Sphere {
         Sphere {
             center,
             radius,
@@ -75,7 +75,7 @@ impl Model for Sphere {
     }
 }
 
-impl Model for [Box<Model>] {
+impl Model for Vec<Box<Model + Send>> {
     fn hit(&self, r: &Ray, interval: &TimeInterval) -> Option<Hit> {
         let mut closest = None;
         for child in self {
