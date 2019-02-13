@@ -145,7 +145,7 @@ fn color(r: Ray, world: &Vec<Box<Model + Send>>, depth: i32) -> Vec3 {
 }
 
 fn main() {
-    let (width, height) = (200, 100);
+    let (width, height) = (800, 400);
     let samples_per_pixel = 100;
 
     let world = Arc::new(Mutex::new(random_scene()));
